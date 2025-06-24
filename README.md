@@ -1,46 +1,121 @@
-# Getting Started with Create React App
+# College Album - Photo Scrapbook
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A beautiful photo scrapbook application built with React and FastAPI.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Upload and organize photos with stories
+- Search and filter entries
+- Favorite entries
+- Soft delete with restore functionality
+- Responsive design with Tailwind CSS
 
-### `npm start`
+## Local Development
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Backend Setup
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-### `npm test`
+2. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### `npm run build`
+4. Run the backend:
+   ```bash
+   python run.py
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+The backend will be available at `http://localhost:8000`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Frontend Setup
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-### `npm run eject`
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+3. Start the development server:
+   ```bash
+   npm start
+   ```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The frontend will be available at `http://localhost:3000`
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## Deployment on Render
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Prerequisites
 
-## Learn More
+1. Create a Render account at [render.com](https://render.com)
+2. Connect your GitHub repository to Render
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Backend Deployment
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. In your Render dashboard, click "New +" and select "Web Service"
+2. Connect your GitHub repository
+3. Configure the service:
+   - **Name**: `college-album-backend`
+   - **Environment**: `Python`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+   - **Root Directory**: `backend`
+
+4. Add environment variables:
+   - `ENVIRONMENT`: `production`
+   - `PYTHON_VERSION`: `3.9.18`
+
+5. Create a PostgreSQL database:
+   - Click "New +" and select "PostgreSQL"
+   - Name it `college-album-db`
+   - Copy the connection string and add it as `DATABASE_URL` environment variable
+
+### Frontend Deployment
+
+1. In your Render dashboard, click "New +" and select "Static Site"
+2. Connect your GitHub repository
+3. Configure the service:
+   - **Name**: `college-album-frontend`
+   - **Build Command**: `npm install && npm run build`
+   - **Publish Directory**: `build`
+   - **Root Directory**: `frontend`
+
+4. Add environment variable:
+   - `REACT_APP_API_URL`: `https://your-backend-url.onrender.com`
+
+### Alternative: Using render.yaml
+
+You can also deploy using the provided `render.yaml` files:
+
+1. For backend: Use the `backend/render.yaml` file
+2. For frontend: Use the `frontend/render.yaml` file
+
+## API Endpoints
+
+- `GET /entries/` - Get all entries with optional filtering
+- `POST /entries/` - Create a new entry
+- `GET /entries/{id}` - Get a specific entry
+- `PUT /entries/{id}` - Update an entry
+- `DELETE /entries/{id}` - Delete an entry
+- `POST /entries/{id}/favorite` - Toggle favorite status
+- `GET /deleted-entries/` - Get deleted entries
+- `POST /deleted-entries/{id}/restore` - Restore a deleted entry
+
+## Technologies Used
+
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **Backend**: FastAPI, SQLAlchemy, PostgreSQL
+- **Deployment**: Render
