@@ -41,10 +41,10 @@ export const api = {
       throw new Error('Failed to fetch entries');
     }
     const data = await response.json();
-    // Map image_url to imageUrl and construct the correct URL
+    // Map image_url to imageUrl - now using base64 data directly
     const mappedData = data.map((entry: any) => ({
       ...entry,
-      imageUrl: entry.image_url ? `${API_URL}/media/${entry.image_url}` : undefined,
+      imageUrl: entry.image_url || undefined,
     }));
     console.log('API: Received entries:', mappedData);
     console.log('API: First entry imageUrl:', mappedData[0]?.imageUrl);
@@ -57,10 +57,10 @@ export const api = {
       throw new Error('Failed to fetch entry');
     }
     const entry = await response.json();
-    // Map image_url to imageUrl and construct the correct URL
+    // Map image_url to imageUrl - now using base64 data directly
     return {
       ...entry,
-      imageUrl: entry.image_url ? `${API_URL}/media/${entry.image_url}` : undefined,
+      imageUrl: entry.image_url || undefined,
     };
   },
 
@@ -127,10 +127,10 @@ export const api = {
       throw new Error('Failed to fetch deleted entries');
     }
     const data = await response.json();
-    // Map image_url to imageUrl and construct the correct URL
+    // Map image_url to imageUrl - now using base64 data directly
     const mappedData = data.map((entry: any) => ({
       ...entry,
-      imageUrl: entry.image_url ? `${API_URL}/media/${entry.image_url}` : undefined,
+      imageUrl: entry.image_url || undefined,
     }));
     return mappedData;
   },
@@ -143,10 +143,10 @@ export const api = {
       throw new Error('Failed to restore entry');
     }
     const entry = await response.json();
-    // Map image_url to imageUrl and construct the correct URL
+    // Map image_url to imageUrl - now using base64 data directly
     return {
       ...entry,
-      imageUrl: entry.image_url ? `${API_URL}/media/${entry.image_url}` : undefined,
+      imageUrl: entry.image_url || undefined,
     };
   },
 
@@ -167,10 +167,10 @@ export const api = {
       throw new Error('Failed to toggle favorite');
     }
     const entry = await response.json();
-    // Map image_url to imageUrl and construct the correct URL
+    // Map image_url to imageUrl - now using base64 data directly
     return {
       ...entry,
-      imageUrl: entry.image_url ? `${API_URL}/media/${entry.image_url}` : undefined,
+      imageUrl: entry.image_url || undefined,
     };
   },
 

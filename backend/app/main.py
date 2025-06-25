@@ -8,6 +8,9 @@ from datetime import datetime
 import os
 import shutil
 import logging
+import base64
+import io
+from PIL import Image
 from app import models
 from app import schemas
 from app.database import engine, get_db
@@ -35,16 +38,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Create entries directory if it doesn't exist
-ENTRIES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "entries")
-logger.info(f"Entries directory path: {ENTRIES_DIR}")
-os.makedirs(ENTRIES_DIR, exist_ok=True)
-logger.info(f"Entries directory exists: {os.path.exists(ENTRIES_DIR)}")
-
-# Mount the entries directory
-app.mount("/media", StaticFiles(directory=ENTRIES_DIR), name="media")
-logger.info(f"Mounted /media to directory: {ENTRIES_DIR}")
 
 @app.get("/")
 def read_root():
@@ -130,25 +123,25 @@ async def create_entry(
         if not content_type or not content_type.startswith('image/'):
             logger.error(f"Invalid file type: {content_type}")
             raise HTTPException(status_code=400, detail="Only image files are allowed")
-            
-        # Create a simple filename using timestamp
-        file_extension = os.path.splitext(file.filename)[1]
-        safe_filename = f"{datetime.utcnow().timestamp()}{file_extension}"
-        file_path = os.path.join(ENTRIES_DIR, safe_filename)
-        logger.info(f"Saving file to: {file_path}")
         
-        # Save the file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        # Read and compress the image
+        image_data = await file.read()
+        image = Image.open(io.BytesIO(image_data))
         
-        logger.info(f"File saved successfully: {file_path}")
+        # Convert to JPEG and compress
+        output = io.BytesIO()
+        image.convert('RGB').save(output, format='JPEG', quality=70, optimize=True)
+        compressed_image = output.getvalue()
+        
+        # Convert to base64
+        base64_image = base64.b64encode(compressed_image).decode('utf-8')
         
         # Create database entry
         db_entry = models.Entry(
             title=title,
             date=date,
             story=story,
-            image_url=safe_filename  # Store just the filename
+            image_url=f"data:image/jpeg;base64,{base64_image}"  # Store as base64
         )
         db.add(db_entry)
         db.commit()
@@ -157,8 +150,6 @@ async def create_entry(
     except Exception as e:
         logger.error(f"Error creating entry: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        file.file.close()
 
 @app.put("/entries/{entry_id}", response_model=schemas.Entry)
 async def update_entry(
@@ -181,23 +172,21 @@ async def update_entry(
             if not content_type or not content_type.startswith('image/'):
                 logger.error(f"Invalid file type: {content_type}")
                 raise HTTPException(status_code=400, detail="Only image files are allowed")
-                
-            # Delete old file if it exists
-            if db_entry.image_url:
-                old_file_path = os.path.join(ENTRIES_DIR, db_entry.image_url)
-                if os.path.exists(old_file_path):
-                    os.remove(old_file_path)
             
-            # Save new file
-            file_extension = os.path.splitext(file.filename)[1]
-            safe_filename = f"{datetime.utcnow().timestamp()}{file_extension}"
-            file_path = os.path.join(ENTRIES_DIR, safe_filename)
-            logger.info(f"Saving new file to: {file_path}")
+            # Read and compress the image
+            image_data = await file.read()
+            image = Image.open(io.BytesIO(image_data))
             
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            # Convert to JPEG and compress
+            output = io.BytesIO()
+            image.convert('RGB').save(output, format='JPEG', quality=70, optimize=True)
+            compressed_image = output.getvalue()
             
-            db_entry.image_url = safe_filename
+            # Convert to base64
+            base64_image = base64.b64encode(compressed_image).decode('utf-8')
+            
+            # Update the image_url with base64 data
+            db_entry.image_url = f"data:image/jpeg;base64,{base64_image}"
         
         # Update other fields
         db_entry.title = title
@@ -210,9 +199,6 @@ async def update_entry(
     except Exception as e:
         logger.error(f"Error updating entry: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        if file:
-            file.file.close()
 
 @app.delete("/entries/{entry_id}")
 def delete_entry(entry_id: int, db: Session = Depends(get_db)):
@@ -271,11 +257,7 @@ def delete_backup_permanently(backup_id: int, db: Session = Depends(get_db)):
     backup_entry = db.query(models.EntryBackup).filter(models.EntryBackup.id == backup_id).first()
     if backup_entry is None:
         raise HTTPException(status_code=404, detail="Backup entry not found")
-    # Delete the file if it exists
-    if backup_entry.image_url:
-        file_path = os.path.join(ENTRIES_DIR, backup_entry.image_url)
-        if os.path.exists(file_path):
-            os.remove(file_path)
+    # No need to delete files since images are stored as base64 in database
     db.delete(backup_entry)
     db.commit()
     return {"message": "Entry permanently deleted"}
