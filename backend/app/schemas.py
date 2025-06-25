@@ -18,11 +18,11 @@ class Entry(EntryBase):
     updated_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 class EntryBackup(Entry):
     original_id: int
     deleted_at: datetime
 
     class Config:
-        from_attributes = True 
+        orm_mode = True 
